@@ -13,12 +13,37 @@ npm run openapi
 
 ## Usage
 ```ts
-import { createTrpcClient } from "warera-trpc-client";
+import { createTrpcClient } from "../src/trpc-client";
 
-const client = createTrpcClient({
-	url: "https://api2.warera.io/trpc",
-	apiKey: "YOUR_API_KEY",
+async function main() {
+  const trpc = createTrpcClient({
+    url: "https://api2.warera.io/trpc",
+    apiKey: process.env.WARERA_API_KEY
+  });
+
+  // After running npm run openapi, the objects and input typing will automatically
+  // become available for the trpc object
+  const allCountries: any = await trpc.country.getAllCountries({});
+  const firstID = allCountries[0]._id;
+
+
+  // Test: run multiple requests concurrently
+  // Question: Is this the right way to have all the actions in one request?
+  const [countryById, government] = await Promise.all([
+    trpc.country.getCountryById({ countryId: firstID }),
+    trpc.government.getByCountryId({ countryId: firstID })
+  ]);
+
+  // Log out the results
+  console.log("Country details:", countryById);
+  console.log("Government:", government);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
+
 ```
 
 ## Important

@@ -1,41 +1,47 @@
-import { createTRPCProxyClient, httpBatchLink, loggerLink, TRPCLink } from "@trpc/client";
-import type { AnyRouter } from "@trpc/server";
+import { createTRPCUntypedClient, httpBatchLink, loggerLink } from "@trpc/client";
+import type { TrpcLikeClient } from "./typed-procedures";
 
-export interface TrpcClientOptions<TRouter extends AnyRouter> {
+export interface TrpcLikeClientOptions {
   url: string;
-  fetch?: typeof fetch;
-  headers?: Record<string, string>;
   apiKey?: string;
   logger?: boolean;
-
-  // IMPORTANT: match server router transformer
-  transformer: TRouter["_def"]["_config"]["transformer"];
+  fetch?: typeof fetch;
+  headers?: Record<string, string>;
 }
 
-export function createTrpcClient<TRouter extends AnyRouter>(
-  options: TrpcClientOptions<TRouter>
-) {
-  const links: TRPCLink<TRouter>[] = [];
+type UntypedClient = {
+  query: (path: string, input: unknown) => Promise<unknown>;
+};
 
-  if (options.logger !== false) {
-    links.push(loggerLink<TRouter>());
-  }
+export function createTrpcClient(options: TrpcLikeClientOptions): TrpcLikeClient {
+  const client = createTRPCUntypedClient({
+    links: [
+      ...(options.logger === false ? [] : [loggerLink()]),
+      httpBatchLink({
+        url: options.url,
+        fetch: options.fetch,
+        headers() {
+          return {
+            ...(options.headers ?? {}),
+            ...(options.apiKey ? { "x-api-key": options.apiKey } : {})
+          };
+        }
+      })
+    ]
+  }) as unknown as UntypedClient;
 
-  links.push(
-    httpBatchLink<TRouter>({
-      url: options.url,
-      fetch: options.fetch,
-      headers() {
-        return {
-          ...(options.headers ?? {}),
-          ...(options.apiKey ? { "x-api-key": options.apiKey } : {}),
-        };
+  const makeProxy = (parts: string[]): any =>
+    new Proxy(() => {}, {
+      get(_t, prop) {
+        if (typeof prop !== "string") return undefined;
+        return makeProxy([...parts, prop]);
       },
-    })
-  );
+      async apply(_t, _thisArg, argArray) {
+        const path = parts.join(".");
+        const input = argArray?.[0] ?? {};
+        return client.query(path, input);
+      }
+    });
 
-  return createTRPCProxyClient<TRouter>({
-    links,
-    transformer: options.transformer,
-  });
+  return makeProxy([]) as TrpcLikeClient;
 }

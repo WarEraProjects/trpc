@@ -1,19 +1,23 @@
-import { createTrpcLikeClient } from "../src/trpc-proxy-client";
+import { createTrpcClient } from "../src/trpc-client";
 
 async function main() {
-  const trpc = createTrpcLikeClient({
+  const trpc = createTrpcClient({
     url: "https://api2.warera.io/trpc",
     apiKey: process.env.WARERA_API_KEY
   });
 
+  const allCountries: any = await trpc.country.getAllCountries({});
+  const firstID = allCountries[0]._id;
+
+
   // Test: run multiple requests concurrently
-  const [countryById, allCountries] = await Promise.all([
-    trpc.country.getCountryById({ countryId: "683ddd2c24b5a2e114af1612" }),
-    trpc.country.getAllCountries({})
+  const [countryById, government] = await Promise.all([
+    trpc.country.getCountryById({ countryId: firstID }),
+    trpc.government.getByCountryId({ countryId: firstID })
   ]);
 
   console.log("Country details:", countryById);
-  console.log("All countries:", allCountries);
+  console.log("Government:", government);
 }
 
 main().catch((err) => {

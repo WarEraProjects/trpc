@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { operations as Operations } from "../src/api/warera-openapi";
-import { createTrpcLikeClient } from "../src/trpc-proxy-client";
+import { createTrpcClient } from "../src/trpc-client";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,7 +12,7 @@ type OperationKey = keyof Operations;
 
 const outputsRoot = path.join(__dirname, "outputs");
 
-const trpc = createTrpcLikeClient({
+const trpc = createTrpcClient({
 	url: process.env.WARERA_API_URL ?? "https://api2.warera.io/trpc",
 	apiKey: process.env.WARERA_API_KEY
 });
