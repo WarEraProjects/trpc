@@ -28,7 +28,7 @@ async function main() {
 
 
   // Test: run multiple requests concurrently
-  // Question: Is this the right way to have all the actions in one request?
+  // tRPC bundles the promises and sends it as one request to the server using batching.
   const [countryById, government] = await Promise.all([
     trpc.country.getCountryById({ countryId: firstID }),
     trpc.government.getByCountryId({ countryId: firstID })
