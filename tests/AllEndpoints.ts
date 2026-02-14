@@ -62,6 +62,7 @@ const allOperations: OperationKey[] = [
 	"user.getUserLite",
 	"user.getUsersByCountry",
 	"article.getArticleById",
+	"article.getArticleLiteById",
 	"article.getArticlesPaginated",
 	"mu.getById",
 	"mu.getManyPaginated",
@@ -502,6 +503,8 @@ async function main() {
 			case "user.getUsersByCountry":
 				return { countryId, limit: 1 };
 			case "article.getArticleById":
+				return { articleId: requireId("articleId", finalArticleId, "WARERA_ARTICLE_ID") };
+			case "article.getArticleLiteById":
 				return { articleId: requireId("articleId", finalArticleId, "WARERA_ARTICLE_ID") };
 			case "article.getArticlesPaginated":
 				return { type: "last", limit: 1 };

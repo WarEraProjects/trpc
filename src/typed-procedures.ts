@@ -1,3 +1,4 @@
+import type { Responses } from "./api/Responses";
 import type { operations } from "./api/warera-openapi";
 
 export type ProcedureKey = keyof operations;
@@ -12,13 +13,17 @@ export type InputFor<K extends ProcedureKey> = operations[K] extends {
   ? JsonContent<RB>
   : never;
 
-export type ResponseFor<K extends ProcedureKey> = operations[K] extends {
+type ResponseFromOpenApi<K extends ProcedureKey> = operations[K] extends {
   responses: { 200: infer R };
 }
   ? JsonContent<R> extends never
     ? unknown
     : JsonContent<R>
   : unknown;
+
+export type ResponseFor<K extends ProcedureKey> = K extends keyof Responses
+  ? Responses[K]
+  : ResponseFromOpenApi<K>;
 
 export type TrpcProcedure<K extends ProcedureKey> = {
   key: K;
