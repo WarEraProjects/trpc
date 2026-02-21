@@ -1,40 +1,43 @@
 # WarEra tRPC Client
 This package provides a frontend + backend compatible tRPC communication layer for the WarEra.io API.
 
+# Why should I use this package?
+[WarEra.io](app.warera.io) is built on tRPC, and this client gives you a contract-aware integration layer instead of “raw HTTP calls”.
+
+You get typed procedures, batching, and rate-limit safety out of the box.
+
+## What it can do
+- End-to-end TypeScript typing for inputs and responses.
+- Procedure discovery via IntelliSense (no manual endpoint hunting).
+- Automatic request batching to reduce network overhead and improve throughput.
+- Built-in rate limiting aligned to API requirements, so your app degrades gracefully under throttling.
+- Automatic URL length handling by splitting oversized requests and recombining results.
+- Less boilerplate, fewer edge cases, faster iteration.
+
 ## Install
 ```bash
-npm install
-```
-
-## Generate OpenAPI Types
-```bash
-npm run openapi
+npm i @wareraprojects/api
 ```
 
 ## Usage
 ```ts
-import { createTrpcClient } from "../src/trpc-client";
+import { createTrpcLikeClient } from "@wareraprojects/api";
 
 async function main() {
-  const trpc = createTrpcClient({
+  const client = createTrpcLikeClient({
     url: "https://api2.warera.io/trpc",
     apiKey: process.env.WARERA_API_KEY
   });
 
-  // After running npm run openapi, the objects and input typing will automatically
-  // become available for the trpc object
-  const allCountries: any = await trpc.country.getAllCountries({});
-  const firstID = allCountries[0]._id;
+  const allCountries = await client.country.getAllCountries({});
+  const firstId = allCountries[0]._id;
 
-
-  // Test: run multiple requests concurrently
-  // tRPC bundles the promises and sends it as one request to the server using batching.
+  // Multiple calls in the same tick can be batched into fewer HTTP requests.
   const [countryById, government] = await Promise.all([
-    trpc.country.getCountryById({ countryId: firstID }),
-    trpc.government.getByCountryId({ countryId: firstID })
+    client.country.getCountryById({ countryId: firstId }),
+    client.government.getByCountryId({ countryId: firstId })
   ]);
 
-  // Log out the results
   console.log("Country details:", countryById);
   console.log("Government:", government);
 }
@@ -43,10 +46,5 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
 ```
 
-## Important
-The API does not provide return types, thus the return types needs to be created manually, and added as a type.
-Do not change the `warera-openapi.d.ts` as it will be overwritten when `npm run openapi` is executed.
-Currently the tests folder is being used to create the types manually.
