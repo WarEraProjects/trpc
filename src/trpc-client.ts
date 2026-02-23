@@ -1,5 +1,5 @@
 import { createTRPCUntypedClient, httpBatchLink, loggerLink } from "@trpc/client";
-import type { TrpcLikeClient } from "./typed-procedures";
+import type { PageResult, ProcedureKey, TrpcLikeClient } from "./typed-procedures";
 
 export interface TrpcLikeClientOptions {
   url: string;
@@ -14,6 +14,72 @@ export interface TrpcLikeClientOptions {
 type UntypedClient = {
   query: (path: string, input: unknown) => Promise<unknown>;
 };
+
+/**
+ * Parse the date from a cursor string in the format "{date}|{id}".
+ * Returns null if the cursor is invalid, empty, or the date cannot be parsed.
+ */
+function parseCursorDate(cursor: string | null | undefined): Date | null {
+  if (!cursor || typeof cursor !== "string") return null;
+  
+  const pipeIndex = cursor.indexOf("|");
+  if (pipeIndex === -1) return null;
+  
+  const dateStr = cursor.substring(0, pipeIndex);
+  try {
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Async generator that auto-paginates through a cursor-based endpoint.
+ * Yields pages until nextCursor is null/empty, maxPages is reached, or cursorEnd is exceeded.
+ */
+async function* autoPaginate<K extends ProcedureKey>(
+  client: UntypedClient,
+  path: string,
+  input: Record<string, unknown>,
+  options: { maxPages?: number; cursorEnd?: Date }
+): AsyncIterableIterator<PageResult<K>> {
+  let currentCursor: string | undefined = input.cursor as string | undefined;
+  let pageCount = 0;
+  const maxPages = options.maxPages ?? Infinity;
+
+  while (pageCount < maxPages) {
+    // Make the request with the current cursor
+    const requestInput = { ...input, cursor: currentCursor };
+    const response = (await client.query(path, requestInput)) as {
+      items: unknown[];
+      nextCursor: string;
+    };
+
+    // Yield the current page
+    yield {
+      items: response.items,
+      cursor: response.nextCursor || "",
+    } as PageResult<K>;
+
+    pageCount++;
+
+    // Check termination conditions
+    if (!response.nextCursor) {
+      break; // No more pages
+    }
+
+    // Check cursorEnd condition
+    if (options.cursorEnd) {
+      const cursorDate = parseCursorDate(response.nextCursor);
+      if (cursorDate && cursorDate < options.cursorEnd) {
+        break; // Next cursor is older than cutoff date
+      }
+    }
+
+    currentCursor = response.nextCursor;
+  }
+}
 
 function createRateLimitedFetch(origFetch?: typeof fetch, rateLimit = 100): typeof fetch {
   const f: typeof fetch = origFetch ?? (globalThis as any).fetch;
@@ -94,7 +160,7 @@ export function createTrpcClient(options: TrpcLikeClientOptions & {rateLimit?: n
     links: [
       ...(options.logger === false ? [] : [loggerLink()]),
       httpBatchLink({
-        url: options.url,
+        url: options.url ?? "https://api2.warera.io/trpc",
         fetch: createRateLimitedFetch(options.fetch, appliedRateLimit),
         maxURLLength: 2000,
         headers() {
@@ -113,9 +179,20 @@ export function createTrpcClient(options: TrpcLikeClientOptions & {rateLimit?: n
         if (typeof prop !== "string") return undefined;
         return makeProxy([...parts, prop]);
       },
-      async apply(_t, _thisArg, argArray) {
+      apply(_t, _thisArg, argArray) {
         const path = parts.join(".");
         const input = argArray?.[0] ?? {};
+        
+        // Check if auto-pagination is requested
+        if (input.autoPaginate === true) {
+          const { autoPaginate: _unused, maxPages, cursorEnd, ...cleanedInput } = input;
+          return autoPaginate(client, path, cleanedInput, {
+            maxPages,
+            cursorEnd,
+          });
+        }
+        
+        // Regular query
         return client.query(path, input);
       }
     });

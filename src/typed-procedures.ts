@@ -7,11 +7,33 @@ type JsonContent<T> = T extends { content: { "application/json": infer C } }
   ? C
   : never;
 
-export type InputFor<K extends ProcedureKey> = operations[K] extends {
+export type PaginationOptions = {
+  autoPaginate?: boolean;
+  maxPages?: number;
+  cursorEnd?: Date;
+};
+
+type BaseInputFor<K extends ProcedureKey> = operations[K] extends {
   requestBody?: infer RB;
 }
   ? JsonContent<RB>
   : never;
+
+type IsPaginatedResponse<T> = T extends { items: any[]; nextCursor: string }
+  ? true
+  : false;
+
+type ExtractItems<T> = T extends { items: infer I }
+  ? I extends Array<infer Item>
+    ? Item
+    : never
+  : never;
+
+export type InputFor<K extends ProcedureKey> = IsPaginatedResponse<
+  ResponseFor<K>
+> extends true
+  ? BaseInputFor<K> & Partial<PaginationOptions>
+  : BaseInputFor<K>;
 
 type ResponseFromOpenApi<K extends ProcedureKey> = operations[K] extends {
   responses: { 200: infer R };
@@ -24,6 +46,11 @@ type ResponseFromOpenApi<K extends ProcedureKey> = operations[K] extends {
 export type ResponseFor<K extends ProcedureKey> = K extends keyof Responses
   ? Responses[K]
   : ResponseFromOpenApi<K>;
+
+export type PageResult<K extends ProcedureKey> = {
+  items: ExtractItems<ResponseFor<K>>[];
+  cursor: string;
+};
 
 export type TrpcProcedure<K extends ProcedureKey> = {
   key: K;
@@ -41,12 +68,23 @@ type UnionToIntersection<U> = (
 
 type MergeDeep<T> = { [K in keyof T]: T[K] };
 
+type ProcedureFunction<K extends ProcedureKey> = IsPaginatedResponse<
+  ResponseFor<K>
+> extends true
+  ? {
+      (input: InputFor<K> & { autoPaginate: true }): AsyncIterableIterator<
+        PageResult<K>
+      >;
+      (input: InputFor<K>): Promise<ResponseFor<K>>;
+    }
+  : (input: InputFor<K>) => Promise<ResponseFor<K>>;
+
 type BuildPath<Parts extends string[], K extends ProcedureKey> = Parts extends [
   infer H extends string,
   ...infer R extends string[]
 ]
   ? R["length"] extends 0
-    ? { [P in H]: (input: InputFor<K>) => Promise<ResponseFor<K>> }
+    ? { [P in H]: ProcedureFunction<K> }
     : { [P in H]: BuildPath<R, K> }
   : never;
 
