@@ -26,7 +26,6 @@ import { createAPIClient } from "@wareraprojects/api";
 
 async function main() {
   const client = createAPIClient({
-    url: "https://api2.warera.io/trpc",
     apiKey: process.env.WARERA_API_KEY
   });
 
@@ -58,7 +57,6 @@ import { createAPIClient } from "@wareraprojects/api";
 
 async function main() {
   const client = createAPIClient({
-    url: "https://api2.warera.io/trpc",
     apiKey: process.env.WARERA_API_KEY
   });
 
