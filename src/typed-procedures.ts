@@ -19,7 +19,8 @@ type BaseInputFor<K extends ProcedureKey> = operations[K] extends {
   ? JsonContent<RB>
   : never;
 
-type IsPaginatedResponse<T> = T extends { items: any[]; nextCursor: string }
+// Auto-detect if endpoint supports pagination: check if input has "cursor" property
+type IsPaginatedResponse<K extends ProcedureKey> = BaseInputFor<K> extends { cursor?: any }
   ? true
   : false;
 
@@ -29,9 +30,7 @@ type ExtractItems<T> = T extends { items: infer I }
     : never
   : never;
 
-export type InputFor<K extends ProcedureKey> = IsPaginatedResponse<
-  ResponseFor<K>
-> extends true
+export type InputFor<K extends ProcedureKey> = IsPaginatedResponse<K> extends true
   ? BaseInputFor<K> & Partial<PaginationOptions>
   : BaseInputFor<K>;
 
@@ -68,16 +67,39 @@ type UnionToIntersection<U> = (
 
 type MergeDeep<T> = { [K in keyof T]: T[K] };
 
-type ProcedureFunction<K extends ProcedureKey> = IsPaginatedResponse<
-  ResponseFor<K>
+// Helper type to check if a type is exactly `never`
+type IsNever<T> = [T] extends [never] ? true : false;
+
+// Helper type to check if all properties in a type are optional
+type AllPropertiesOptional<T> = { [K in keyof T]-?: T[K] } extends T ? true : false;
+
+// Helper type to determine if input should be optional
+// Input is optional if: no input type, empty record, or all properties are optional
+type HasRequiredInput<K extends ProcedureKey> = IsNever<
+  BaseInputFor<K>
 > extends true
+  ? false
+  : AllPropertiesOptional<BaseInputFor<K>> extends true
+  ? false
+  : true;
+
+type ProcedureFunction<K extends ProcedureKey> = HasRequiredInput<K> extends true
+  ? IsPaginatedResponse<K> extends true
+    ? {
+        (input: InputFor<K>): Promise<ResponseFor<K>>;
+        (input: InputFor<K> & { autoPaginate: true }): AsyncIterableIterator<
+          PageResult<K>
+        >;
+      }
+    : (input: InputFor<K>) => Promise<ResponseFor<K>>
+  : IsPaginatedResponse<K> extends true
   ? {
-      (input: InputFor<K> & { autoPaginate: true }): AsyncIterableIterator<
+      (input?: InputFor<K>): Promise<ResponseFor<K>>;
+      (input?: InputFor<K> & { autoPaginate: true }): AsyncIterableIterator<
         PageResult<K>
       >;
-      (input: InputFor<K>): Promise<ResponseFor<K>>;
     }
-  : (input: InputFor<K>) => Promise<ResponseFor<K>>;
+  : (input?: InputFor<K>) => Promise<ResponseFor<K>>;
 
 type BuildPath<Parts extends string[], K extends ProcedureKey> = Parts extends [
   infer H extends string,
@@ -103,7 +125,7 @@ export function procedure<K extends ProcedureKey>(key: K): TrpcProcedure<K> {
 export async function trpcQuery<K extends ProcedureKey>(
   client: { query: (path: K, input: InputFor<K>) => Promise<ResponseFor<K>> },
   proc: TrpcProcedure<K>,
-  input: InputFor<K>
+  input?: InputFor<K>
 ) {
-  return client.query(proc.key, input);
+  return client.query(proc.key, input ?? ({} as InputFor<K>));
 }

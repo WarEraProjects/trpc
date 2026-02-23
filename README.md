@@ -29,7 +29,7 @@ async function main() {
     apiKey: process.env.WARERA_API_KEY
   });
 
-  const allCountries = await client.country.getAllCountries({});
+  const allCountries = await client.country.getAllCountries();
   const firstId = allCountries[0]._id;
 
   // Multiple calls in the same tick can be batched into fewer HTTP requests.
