@@ -22,10 +22,10 @@ npm i @wareraprojects/api
 
 ## Usage
 ```ts
-import { createTrpcLikeClient } from "@wareraprojects/api";
+import { createAPIClient } from "@wareraprojects/api";
 
 async function main() {
-  const client = createTrpcLikeClient({
+  const client = createAPIClient({
     url: "https://api2.warera.io/trpc",
     apiKey: process.env.WARERA_API_KEY
   });
