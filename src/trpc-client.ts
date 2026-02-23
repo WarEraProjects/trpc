@@ -2,7 +2,7 @@ import { createTRPCUntypedClient, httpBatchLink, loggerLink } from "@trpc/client
 import type { PageResult, ProcedureKey, TrpcLikeClient } from "./typed-procedures";
 
 export interface TrpcLikeClientOptions {
-  url: string;
+  url?: string;
   apiKey?: string;
   logger?: boolean;
   fetch?: typeof fetch;
@@ -153,20 +153,20 @@ function createRateLimitedFetch(origFetch?: typeof fetch, rateLimit = 100): type
  * @param options.batchIntervalMs - Time window to batch operations before sending.
  * @returns A `TrpcLikeClient` proxy which can be invoked like `client.foo.bar(input)`
  */
-export function createTrpcClient(options: TrpcLikeClientOptions & {rateLimit?: number}): TrpcLikeClient {
-  const appliedRateLimit = options.rateLimit ?? (options.apiKey !== undefined ? 200 : 100);
+export function createTrpcClient(options?: TrpcLikeClientOptions & {rateLimit?: number}): TrpcLikeClient {
+  const appliedRateLimit = options?.rateLimit ?? (options?.apiKey !== undefined ? 200 : 100);
   
   const client = createTRPCUntypedClient({
     links: [
-      ...(options.logger === false ? [] : [loggerLink()]),
+      ...(options?.logger === true ? [loggerLink()] : []),
       httpBatchLink({
-        url: options.url ?? "https://api2.warera.io/trpc",
-        fetch: createRateLimitedFetch(options.fetch, appliedRateLimit),
+        url: options?.url ?? "https://api2.warera.io/trpc",
+        fetch: createRateLimitedFetch(options?.fetch, appliedRateLimit),
         maxURLLength: 2000,
         headers() {
           return {
-            ...(options.headers ?? {}),
-            ...(options.apiKey ? { "x-api-key": options.apiKey } : {})
+            ...(options?.headers ?? {}),
+            ...(options?.apiKey ? { "x-api-key": options.apiKey } : {})
           };
         }
       })
