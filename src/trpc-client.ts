@@ -160,7 +160,7 @@ export function createTrpcClient(options: TrpcLikeClientOptions & {rateLimit?: n
     links: [
       ...(options.logger === false ? [] : [loggerLink()]),
       httpBatchLink({
-        url: options.url,
+        url: options.url ?? "https://api2.warera.io/trpc",
         fetch: createRateLimitedFetch(options.fetch, appliedRateLimit),
         maxURLLength: 2000,
         headers() {
