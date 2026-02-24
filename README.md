@@ -79,3 +79,10 @@ main().catch(console.error);
 
 See the [Auto-Pagination Guide](./docs/AUTO_PAGINATION.md) for more details and advanced usage patterns.
 
+---
+
+If you wish to support future development, feel free to support the devs:
+
+ZaLimitless (Dog):
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/jvdlanger)
