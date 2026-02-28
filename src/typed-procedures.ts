@@ -116,7 +116,7 @@ type TreeFromKeys<Keys extends string> = UnionToIntersection<
     : never
 >;
 
-export type TrpcLikeClient = MergeDeep<TreeFromKeys<Extract<ProcedureKey, string>>>;
+export type APIClient = MergeDeep<TreeFromKeys<Extract<ProcedureKey, string>>>;
 
 export function procedure<K extends ProcedureKey>(key: K): TrpcProcedure<K> {
   return { key };

@@ -1,5 +1,5 @@
 import { createTRPCUntypedClient, httpBatchLink, loggerLink } from "@trpc/client";
-import type { PageResult, ProcedureKey, TrpcLikeClient } from "./typed-procedures";
+import type { APIClient, PageResult, ProcedureKey } from "./typed-procedures";
 
 export interface TrpcLikeClientOptions {
   url?: string;
@@ -242,7 +242,7 @@ function createBatchLoggingFetch(
  * invocation to call remote procedures. For example:
  *
  * ```ts
- * const client = createTrpcClient({ url: 'https://api.example' });
+ * const client = createAPIClient({ url: 'https://api.example' });
  * const result = await client.article.getById({ id: 1 });
  * ```
  *
@@ -260,7 +260,7 @@ function createBatchLoggingFetch(
  * @param options.batchIntervalMs - Time window to batch operations before sending.
  * @returns A `TrpcLikeClient` proxy which can be invoked like `client.foo.bar(input)`
  */
-export function createTrpcClient(options?: TrpcLikeClientOptions & {rateLimit?: number}): TrpcLikeClient {
+export function createAPIClient(options?: TrpcLikeClientOptions & {rateLimit?: number}): APIClient {
   const appliedRateLimit = options?.rateLimit ?? (options?.apiKey !== undefined ? 200 : 100);
   const baseFetch = options?.fetch ?? (globalThis as any).fetch;
   const loggedFetch = createBatchLoggingFetch(baseFetch, options?.logBatches);
@@ -308,5 +308,5 @@ export function createTrpcClient(options?: TrpcLikeClientOptions & {rateLimit?: 
       }
     });
 
-  return makeProxy([]) as TrpcLikeClient;
+  return makeProxy([]) as APIClient;
 }

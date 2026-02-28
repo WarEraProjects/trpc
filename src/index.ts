@@ -1,10 +1,11 @@
+export * from './api/Responses';
 export type { components, operations, paths } from "./api/warera-openapi";
 export {
-    createTrpcClient as createAPIClient,
+    createAPIClient,
     /**
      * @deprecated Use createAPIClient instead
      */
-    createTrpcClient as createTrpcLikeClient
+    createAPIClient as createTrpcLikeClient
 } from "./trpc-client";
 export type {
     TrpcLikeClientOptions as APIClientOptions,
@@ -13,5 +14,5 @@ export type {
      */
     TrpcLikeClientOptions
 } from "./trpc-client";
-export type { InputFor, ProcedureKey, ResponseFor, TrpcLikeClient, PaginationOptions, PageResult } from "./typed-procedures";
+export type { APIClient, InputFor, PageResult, PaginationOptions, ProcedureKey, ResponseFor } from "./typed-procedures";
 

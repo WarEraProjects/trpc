@@ -1,6 +1,6 @@
-import { createTrpcClient } from "../src/trpc-client";
+import { createAPIClient } from "../src/index";
 
-async function processCountries(allCountries: { _id: string; name: string }[], client: ReturnType<typeof createTrpcClient>): Promise<{ totalUsers: number; totalCompanies: number }> {
+async function processCountries(allCountries: { _id: string; name: string }[], client: ReturnType<typeof createAPIClient>): Promise<{ totalUsers: number; totalCompanies: number }> {
   let totalUsers = 0;
   let totalCompanies = 0;
 
@@ -41,7 +41,7 @@ async function processCountries(allCountries: { _id: string; name: string }[], c
   return { totalUsers, totalCompanies };
 }
 
-async function getAllFromCountry(countryID: string, client: ReturnType<typeof createTrpcClient>) {
+async function getAllFromCountry(countryID: string, client: ReturnType<typeof createAPIClient>) {
   let allUserPromises = [];
 
   // Get all the user IDs from the country using pagination
@@ -66,7 +66,7 @@ async function main() {
   let countingBatches = 0;
   let lastBatchTime = Date.now();
 
-  const client = createTrpcClient({
+  const client = createAPIClient({
     apiKey: process.env.WARERA_API_KEY,
     logBatches: (info) => {
       const now = Date.now();
