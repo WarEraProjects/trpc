@@ -1,4 +1,4 @@
-export * from './api/Responses';
+export type * from './api/Responses';
 export type { components, operations, paths } from "./api/warera-openapi";
 export {
     createAPIClient,
