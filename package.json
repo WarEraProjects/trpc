@@ -2,7 +2,9 @@
 	"name": "@wareraprojects/api",
 	"version": "0.2.0",
 	"description": "tRPC communication layer for WarEra (frontend and backend compatible)",
-	"repository": {"url": "https://github.com/WarEraProjects/trpc"},
+	"repository": {
+		"url": "https://github.com/WarEraProjects/trpc"
+	},
 	"license": "MIT",
 	"type": "module",
 	"main": "./dist/index.cjs",
@@ -32,16 +34,15 @@
 		"allEndpoints": "tsx -r dotenv/config tests/AllEndpoints.ts"
 	},
 	"dependencies": {
-		"@trpc/client": "^10.45.2",
-		"@trpc/server": "^10.45.2"
+		"@trpc/client": "^10.45.2"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.5",
 		"dotenv": "^16.4.5",
 		"openapi-typescript": "^7.4.2",
 		"rimraf": "^6.0.1",
-		"tsx": "^4.16.2",
 		"tsup": "^8.3.5",
+		"tsx": "^4.16.2",
 		"typescript": "^5.7.3"
 	}
 }
